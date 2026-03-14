@@ -1,0 +1,65 @@
+#+title: Exercise 2 Notes
+#+source: s01.org
+
+** DONE Exercise 2 [3/3]
+Consider the following code:
+#+begin_src C
+  #include <stdio.h>
+  #include <unistd.h>
+
+  int
+  main(void)
+  {
+    fork();
+    fork();
+    printf("MESCC\n");
+    fork();
+    printf("MESCC\n");
+    return 0;
+  }
+#+end_src
+
+*** DONE (a) How many processes are created when executing the code above?
+#+begin_quote
+The total number of processes created (including the initial parent
+process) is given by the formula:
+#+end_quote
+$$ 2^n, \text{where } n \text{ is the number of consecutive `fork()` calls.} $$
+
+#+begin_quote
+Given that there are 3 `fork()` calls in the code:
+#+end_quote
+
+$$ \text{let } n = 3, $$
+$$ 2^3 = 8. $$
+
+#+begin_quote
+Therefore, 8 processes are created in total.
+#+end_quote
+
+*** DONE (b) Draw a process tree that represents the execution flow of the code above.
+#+begin_quote
+
+#+end_quote
+
+*** DONE (c) How many times is "MESCC" printed?
+#+begin_quote
+R: 15
+#+end_quote
+
+| MESCC |
+| MESCC |
+| MESCC |
+| MESCC |
+| MESCC |
+| MESCC |
+| MESCC |
+| MESCC |
+| MESCC |
+| MESCC |
+| MESCC |
+| MESCC |
+| MESCC |
+| MESCC |
+| MESCC |
+| MESCC |

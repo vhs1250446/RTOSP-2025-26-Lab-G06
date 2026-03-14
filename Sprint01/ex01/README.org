@@ -1,0 +1,44 @@
+#+title: Exercise 1 Notes
+#+source: s01.org
+
+** DONE Exercise 1 [2/2]
+
+Consider the following code:
+#+begin_src C
+  #include <stdio.h>
+  #include <unistd.h>
+
+  int
+  main(void)
+  {
+    int x = 0;
+    pid_t p;
+
+    p = fork();
+
+    if (p == 0) {
+  	x = x + 2;
+  	printf("Step 1. x = %d\n", x);
+    } else {
+  	x = x - 2;
+  	printf("Step 2. x = %d\n", x);
+  	printf("Step 3. p = %d; x = %d\n", p, x);
+    }
+    return 0;
+  }
+#+end_src
+
+*** DONE (a) What is the output of this code in the terminal? Justify your answer.
+| Step | 2 | x | = |     -2 |   |   |    |
+| Step | 3 | p | = | 23871; | x | = | -2 |
+| Step | 1 | x | = |      2 |   |   |    |
+
+*** DONE (b) Please explain the order in which the printf() calls appear in the terminal.
+#+begin_quote
+The order in which `printf()` calls appear in the terminal is random.
+This due to the lack of sync operations in the evaluated code.
+When `fork()` is called, the kernel creates a clone of the callee
+process and the decision of which process to run next depends entirely
+of the current scheduler scheduling-context, e.g. system load or task
+priority.
+#+end_quote

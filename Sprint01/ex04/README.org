@@ -1,0 +1,36 @@
+#+title: Exercise 4 Notes
+#+source: s01.org
+
+** TODO Exercise 4 [0/4]
+
+Consider the following code:
+#+begin_src C
+  #include <stdio.h>
+  #include <unistd.h>
+  #include <sys/wait.h>
+
+  int
+  main(void)
+  {
+    int i;
+    int status;
+    for (i = 0; i < 4; i++) {
+  	if (fork() == 0) {
+  	  sleep(1);
+  	  printf("End of execution!\n");
+  	}
+    }
+    return 0;
+  }
+#+end_src
+
+*** TODO (a) How many processes are created by the above code?
+
+
+*** TODO (b) Please modify the code so that exactly 4 child processes are created.
+
+
+*** TODO (c) Assuming the changes in b), modify the code so that the parent process waits for child processes with an odd process ID.
+
+
+*** TODO (d) Assuming the changes in b) and c), modify the code so that the child processes return a number that shows their creation order (the first child process returns 1, the second returns 2, and so on). Justify your answer.

@@ -1,0 +1,166 @@
+#+title: Exercise 11 Notes
+#+source: s01.org
+
+** DONE Exercise 11
+Create a program that simulates the game of tic-tac-toe using two threads (one per
+player). The moves are randomly generated (obviously respecting the rules).
+
+#+begin_src C
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <pthread.h>
+  #include <time.h>
+  #include <unistd.h>
+
+  char board[3][3];
+  typedef enum {
+    PLAYER_A = 0,
+    PLAYER_B = 1
+  } player_t;
+
+  typedef enum {
+    GAME_IN_PROGRESS = 0,
+    GAME_PLAYER_A_WINS,
+    GAME_PLAYER_B_WINS,
+    GAME_DRAW
+  } game_result_t;
+
+  player_t current_turn = PLAYER_A;
+  int game_over = 0;
+  game_result_t game_result = GAME_IN_PROGRESS;
+
+  pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+  pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+
+  void init_board(void) {
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        board[i][j] = ' ';
+      }
+    }
+  }
+
+  void print_board(void) {
+    printf("\n");
+    for (int i = 0; i < 3; i++) {
+      printf(" %c | %c | %c \n", board[i][0], board[i][1], board[i][2]);
+      if (i < 2) printf("---|---|---\n");
+    }
+    printf("\n");
+  }
+
+  void check_game_state(void) {
+    game_result = GAME_IN_PROGRESS;
+
+    for (int i = 0; i < 3; i++) {
+      if (board[i][0] != ' ' && board[i][0] == board[i][1] && board[i][1] == board[i][2]) {
+        game_result = (board[i][0] == '1') ? GAME_PLAYER_A_WINS : GAME_PLAYER_B_WINS;
+        game_over = 1;
+        return;
+      }
+      if (board[0][i] != ' ' && board[0][i] == board[1][i] && board[1][i] == board[2][i]) {
+        game_result = (board[0][i] == '1') ? GAME_PLAYER_A_WINS : GAME_PLAYER_B_WINS;
+        game_over = 1;
+        return;
+      }
+    }
+
+    if (board[0][0] != ' ' && board[0][0] == board[1][1] && board[1][1] == board[2][2]) {
+      game_result = (board[0][0] == '1') ? GAME_PLAYER_A_WINS : GAME_PLAYER_B_WINS;
+      game_over = 1;
+      return;
+    }
+    if (board[0][2] != ' ' && board[0][2] == board[1][1] && board[1][1] == board[2][0]) {
+      game_result = (board[0][2] == '1') ? GAME_PLAYER_A_WINS : GAME_PLAYER_B_WINS;
+      game_over = 1;
+      return;
+    }
+
+    int empty_spaces = 0;
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        if (board[i][j] == ' ') empty_spaces++;
+      }
+    }
+    if (empty_spaces == 0) {
+      game_result = GAME_DRAW;
+      game_over = 1;
+    }
+  }
+
+  void *play_tic_tac_toe(void *arg) {
+    player_t player_id = *((player_t *)arg);
+    char symbol = (player_id == PLAYER_A) ? '1' : '0';
+    char player_name = (player_id == PLAYER_A) ? 'A' : 'B';
+
+    while (1) {
+      pthread_mutex_lock(&lock);
+
+      while (current_turn != player_id && !game_over) {
+        pthread_cond_wait(&cond, &lock);
+      }
+
+      if (game_over) {
+        pthread_mutex_unlock(&lock);
+        break;
+      }
+
+      int row;
+      int col;
+      do {
+        row = rand() % 3;
+        col = rand() % 3;
+      } while (board[row][col] != ' ');
+
+      printf("Player %c (%c) places on [%d, %d]:", player_name, symbol, row, col);
+      board[row][col] = symbol;
+      print_board();
+
+      check_game_state();
+
+      current_turn = (player_id == PLAYER_A) ? PLAYER_B : PLAYER_A;
+
+      pthread_cond_broadcast(&cond);
+      pthread_mutex_unlock(&lock);
+    }
+
+    return NULL;
+  }
+
+  int main(void) {
+    srand(time(NULL));
+    init_board();
+
+    pthread_t threads[2];
+    player_t player_ids[2] = {PLAYER_A, PLAYER_B};
+
+    print_board();
+
+    for (int i = 0; i < 2; i++) {
+      if (pthread_create(&threads[i], NULL, play_tic_tac_toe, &player_ids[i]) != 0) {
+        perror("Failed to create thread");
+        return 1;
+      }
+    }
+
+    for (int i = 0; i < 2; i++) {
+      pthread_join(threads[i], NULL);
+    }
+
+    printf("Game Over!\n");
+    if (game_result == GAME_DRAW) {
+      printf("Result: It's a Draw!\n");
+    } else if (game_result == GAME_PLAYER_A_WINS) {
+      printf("Result: Player A wins!\n");
+    } else if (game_result == GAME_PLAYER_B_WINS) {
+      printf("Result: Player B wins!\n");
+    } else {
+      printf("Result: Unknown game state.\n");
+    }
+
+    pthread_mutex_destroy(&lock);
+    pthread_cond_destroy(&cond);
+
+    return 0;
+  }
+#+end_src

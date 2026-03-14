@@ -1,0 +1,39 @@
+#+title: Exercise 3 Notes
+#+source: s01.org
+
+** DONE Exercise 3 [2/2]
+Consider the following code:
+#+begin_src C
+  #include <stdio.h>
+  #include <unistd.h>
+
+  int
+  main(void)
+  {
+    int a = 0, b, c, d;
+
+    b = (int)fork();
+    c = (int)getpid();
+    d = (int)getppid();
+    a = a + 5;
+
+    printf("\na=%d, b=%d, c=%d, d=%d\n", a, b, c, d);
+    return 0;
+  }
+#+end_src
+
+*** DONE (a) What are the values of the variables defined in the program above?
+| parent | a=5 | b=23956 | c=23955 | d=12823 |
+| child  | a=5 | b=0     | c=23956 | d=23955 |
+
+*** DONE (b) Do you observe any relation between the values of the variables? Please justify your answer.
+#+begin_quote
+a := In both processes a is assigned to value of 5.
+
+b := On success, the PID of the child process is returned in the parent and 0  is
+returned in the child.
+
+c := Returns the pid of the callee process.
+
+d := Returns the pid of the parent process.
+#+end_quote

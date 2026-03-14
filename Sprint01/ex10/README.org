@@ -1,0 +1,185 @@
+#+title: Exercise 10 Notes
+#+source: s01.org
+
+** DONE Exercise 10
+Develop a program that performs the following actions:
+- creates an array of 100 clients;
+- each client is identified by its own number, name and current balance (values are randomly generated);
+- creates three threads where:
+  - one of the threads verifies if any of the clients has a negative balance and signal each of these;
+  - another thread prints the information of the clients with negative balance using the information from the previous thread;
+  - another thread computes the average balance of all clients.
+- If the average balance is negative, then another thread must be created to eliminate the negative values;
+- If the average balance is positive, then the main thread should print a statement of conformity and exit.
+
+#+begin_src C
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <pthread.h>
+  #include <string.h>
+  #include <time.h>
+  #include <unistd.h>
+
+  #define MAGIC_NUMBER 42
+  #define NUM_CLIENTS 100
+
+  typedef struct {
+    int number;
+    char name[20];
+    float balance;
+  } Client;
+
+  Client clients[NUM_CLIENTS];
+  float average_balance = 0.0;
+
+  int negative_indices[NUM_CLIENTS];
+  int negative_count = 0;
+  int done_checking = 0;
+
+  pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+  pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+
+  // thread 1: verifies negative balances and signals them
+  void*
+  verify_negative_balances(void* arg)
+  {
+    for (int i = 0; i < NUM_CLIENTS; i++) {
+  	if (clients[i].balance < 0.0) {
+  	  pthread_mutex_lock(&mutex);
+  	  negative_indices[negative_count] = i;
+  	  negative_count++;
+  	  pthread_cond_signal(&cond); // Signal the printer thread
+  	  pthread_mutex_unlock(&mutex);
+  	}
+    }
+
+    pthread_mutex_lock(&mutex);
+    done_checking = 1;
+    pthread_cond_broadcast(&cond);
+    pthread_mutex_unlock(&mutex);
+
+    return NULL;
+  }
+
+  // thread 2: prints clients with negative balances
+  void*
+  print_negative_balances(void* arg)
+  {
+    int printed_count = 0;
+
+    while (1) {
+  	pthread_mutex_lock(&mutex);
+
+  	// wait until there is a new negative client to print or checking is done
+  	while (printed_count == negative_count && !done_checking) {
+  	  pthread_cond_wait(&cond, &mutex);
+  	}
+
+  	if (printed_count == negative_count && done_checking) {
+  	  pthread_mutex_unlock(&mutex);
+  	  break;
+  	}
+
+  	while (printed_count < negative_count) {
+  	  int idx = negative_indices[printed_count];
+  	  printf("[Alert] Client #%d (%s) has a negative balance: $%.2f\n",
+  			 clients[idx].number, clients[idx].name, clients[idx].balance);
+  	  printed_count++;
+  	}
+
+  	pthread_mutex_unlock(&mutex);
+    }
+    return NULL;
+  }
+
+  // thread 3: computes the average balance
+  void*
+  compute_average_balance(void* arg)
+  {
+    float sum = 0.0;
+    for (int i = 0; i < NUM_CLIENTS; i++) {
+  	sum += clients[i].balance;
+    }
+    average_balance = sum / NUM_CLIENTS;
+    printf("\n---> Computed Average Balance: $%.2f\n\n", average_balance);
+    return NULL;
+  }
+
+  // thread 4: eliminates negative balances
+  void*
+  eliminate_negative_balances(void* arg)
+  {
+    printf("[Action] Eliminating negative balances...\n");
+    for (int i = 0; i < NUM_CLIENTS; i++) {
+  	if (clients[i].balance < 0.0) {
+  	  clients[i].balance = 0.0;
+  	}
+    }
+    printf("[Action] All negative balances have been reset to $0.00.\n");
+    return NULL;
+  }
+
+  int
+  main()
+  {
+    srand(MAGIC_NUMBER);
+
+    for (int i = 0; i < NUM_CLIENTS; i++) {
+  	clients[i].number = i + 1;
+  	sprintf(clients[i].name, "Client_%d", i + 1);
+  	clients[i].balance = ((float)rand() / RAND_MAX) * 2000.0 - 500.0;
+    }
+
+    pthread_t t1, t2, t3, t4;
+
+    pthread_create(&t1, NULL, verify_negative_balances, NULL);
+    pthread_create(&t2, NULL, print_negative_balances, NULL);
+    pthread_create(&t3, NULL, compute_average_balance, NULL);
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    pthread_join(t3, NULL);
+
+    if (average_balance < 0.0) {
+  	pthread_create(&t4, NULL, eliminate_negative_balances, NULL);
+  	pthread_join(t4, NULL);
+    } else {
+  	printf("[Conformity] Statement of Conformity: The overall average balance is positive. System is stable.\n");
+    }
+
+    pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&cond);
+
+    return 0;
+  }
+#+end_src
+
+#+RESULTS:
+| [Alert]      | Client    | #3      | (Client_3)  | has     | a       | negative | balance: | $-384.75 |           |        |    |         |
+| [Alert]      | Client    | #4      | (Client_4)  | has     | a       | negative | balance: | $-78.30  |           |        |    |         |
+| [Alert]      | Client    | #5      | (Client_5)  | has     | a       | negative | balance: | $-38.35  |           |        |    |         |
+| [Alert]      | Client    | #7      | (Client_7)  | has     | a       | negative | balance: | $-193.21 |           |        |    |         |
+| [Alert]      | Client    | #15     | (Client_15) | has     | a       | negative | balance: | $-113.47 |           |        |    |         |
+| [Alert]      | Client    | #24     | (Client_24) | has     | a       | negative | balance: | $-432.32 |           |        |    |         |
+| [Alert]      | Client    | #30     | (Client_30) | has     | a       | negative | balance: | $-176.07 |           |        |    |         |
+| [Alert]      | Client    | #47     | (Client_47) | has     | a       | negative | balance: | $-64.83  |           |        |    |         |
+| [Alert]      | Client    | #49     | (Client_49) | has     | a       | negative | balance: | $-98.41  |           |        |    |         |
+| [Alert]      | Client    | #52     | (Client_52) | has     | a       | negative | balance: | $-172.47 |           |        |    |         |
+| [Alert]      | Client    | #53     | (Client_53) | has     | a       | negative | balance: | $-25.29  |           |        |    |         |
+| [Alert]      | Client    | #55     | (Client_55) | has     | a       | negative | balance: | $-104.80 |           |        |    |         |
+| [Alert]      | Client    | #61     | (Client_61) | has     | a       | negative | balance: | $-238.16 |           |        |    |         |
+| [Alert]      | Client    | #62     | (Client_62) | has     | a       | negative | balance: | $-490.11 |           |        |    |         |
+| [Alert]      | Client    | #63     | (Client_63) | has     | a       | negative | balance: | $-204.50 |           |        |    |         |
+| [Alert]      | Client    | #68     | (Client_68) | has     | a       | negative | balance: | $-250.14 |           |        |    |         |
+| [Alert]      | Client    | #70     | (Client_70) | has     | a       | negative | balance: | $-315.58 |           |        |    |         |
+| [Alert]      | Client    | #73     | (Client_73) | has     | a       | negative | balance: | $-398.28 |           |        |    |         |
+| [Alert]      | Client    | #74     | (Client_74) | has     | a       | negative | balance: | $-190.26 |           |        |    |         |
+| [Alert]      | Client    | #77     | (Client_77) | has     | a       | negative | balance: | $-330.58 |           |        |    |         |
+| [Alert]      | Client    | #78     | (Client_78) | has     | a       | negative | balance: | $-388.17 |           |        |    |         |
+| [Alert]      | Client    | #79     | (Client_79) | has     | a       | negative | balance: | $-193.99 |           |        |    |         |
+| [Alert]      | Client    | #84     | (Client_84) | has     | a       | negative | balance: | $-207.51 |           |        |    |         |
+| [Alert]      | Client    | #88     | (Client_88) | has     | a       | negative | balance: | $-317.33 |           |        |    |         |
+| [Alert]      | Client    | #99     | (Client_99) | has     | a       | negative | balance: | $-422.63 |           |        |    |         |
+|              |           |         |             |         |         |          |          |          |           |        |    |         |
+| --->         | Computed  | Average | Balance:    | $508.26 |         |          |          |          |           |        |    |         |
+|              |           |         |             |         |         |          |          |          |           |        |    |         |
+| [Conformity] | Statement | of      | Conformity: | The     | overall | average  | balance  | is       | positive. | System | is | stable. |
