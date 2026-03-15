@@ -1,1 +1,62 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <time.h>
 
+#define SIZE 1000
+#define NUM_THREADS 10
+#define SEGMENT (SIZE / NUM_THREADS)
+
+int data_array[SIZE];
+
+void*
+find_segment_max(void *arg)
+{
+  // Fase 2: Thread recebe ponteiro para 1/10 do array
+  int *sub_array = (int *)arg;
+  int local_max = sub_array[0];
+
+  for (int i = 1; i < SEGMENT; i++) {
+    if (sub_array[i] > local_max) {
+      local_max = sub_array[i];
+    }
+  }
+
+  // Fase 3: Retorna o maximo local via pthread_exit
+  pthread_exit((void *)(long)local_max);
+}
+
+int
+main()
+{
+  pthread_t threads[NUM_THREADS];
+  int global_max = -1;
+  void *thread_return;
+
+  // Fase 1: Inicializacao do array
+  srand(time(NULL));
+  for (int i = 0; i < SIZE; i++) {
+    data_array[i] = rand() % 5000;
+  }
+
+  printf("Criar %d threads para processar o array...\n", NUM_THREADS);
+
+  for (int i = 0; i < NUM_THREADS; i++) {
+    // Passa 1/10 do array como parametro (ponteiro para o inicio do segmento)
+    pthread_create(&threads[i], NULL, find_segment_max, (void *)&data_array[i * SEGMENT]);
+  }
+
+  // Fase 4: Main thread recolhe resultados via pthread_join
+  for (int i = 0; i < NUM_THREADS; i++) {
+    pthread_join(threads[i], &thread_return);
+
+    int current_val = (int)(long)thread_return;
+    if (current_val > global_max) {
+      global_max = current_val;
+    }
+  }
+
+  printf("Maximo Global: %d\n", global_max);
+
+  return 0;
+}

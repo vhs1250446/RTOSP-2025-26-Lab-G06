@@ -1,4 +1,5 @@
 #+title: Exercise 2 Notes
+#+author: jfrp
 #+source: s01.org
 
 ** DONE Exercise 2 [3/3]
@@ -12,9 +13,9 @@ Consider the following code:
   {
     fork();
     fork();
-    printf("MESCC\n");
+    printf("MESCC");
     fork();
-    printf("MESCC\n");
+    printf("MESCC");
     return 0;
   }
 #+end_src
@@ -38,28 +39,20 @@ Therefore, 8 processes are created in total.
 #+end_quote
 
 *** DONE (b) Draw a process tree that represents the execution flow of the code above.
-#+begin_quote
-
-#+end_quote
+[[file:process-tree.png][3-fork-process-tree]]
 
 *** DONE (c) How many times is "MESCC" printed?
 #+begin_quote
-R: 15
-#+end_quote
+16 times, why?
 
-| MESCC |
-| MESCC |
-| MESCC |
-| MESCC |
-| MESCC |
-| MESCC |
-| MESCC |
-| MESCC |
-| MESCC |
-| MESCC |
-| MESCC |
-| MESCC |
-| MESCC |
-| MESCC |
-| MESCC |
-| MESCC |
+1. The first printf() call is executed by 4 processes, buffering
+   "MESCC" into stout; Since no newline is introduced, the content is
+   not flushed;
+2. The third fork() creates the other 4 processes (totaling 8), and
+   each one gets a copy of the stdout buffer containing "MESCC";
+3. The second printf() is executed by all 8 processes and each of them
+   adds yet another "MESCC" to its stdout buffer;
+4. The total print count is: 8 x 2 "MESCC" = 16 "MESCC";
+
+Found this online as well: [[https://cis.temple.edu/~giorgio/old/cis307s95/homeworks/problem1.html][Funny going ons with printf]]
+#+end_quote

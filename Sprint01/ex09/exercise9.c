@@ -84,6 +84,22 @@ main(void)
 	pthread_join(mult_t[i], NULL);
   }
 
+  printf("Resulting %dx%d Matrix (A):\n", MATRIX_SIZE, MATRIX_SIZE);
+  for (int i = 0; i < MATRIX_SIZE; i++) {
+	for (int j = 0; j < MATRIX_SIZE; j++) {
+	  printf("%4d ", A[i][j]);
+	}
+	printf("\n");
+  }
+
+  printf("Resulting %dx%d Matrix (B):\n", MATRIX_SIZE, MATRIX_SIZE);
+  for (int i = 0; i < MATRIX_SIZE; i++) {
+	for (int j = 0; j < MATRIX_SIZE; j++) {
+	  printf("%4d ", B[i][j]);
+	}
+	printf("\n");
+  }
+
   printf("Resulting %dx%d Matrix (C):\n", MATRIX_SIZE, MATRIX_SIZE);
   for (int i = 0; i < MATRIX_SIZE; i++) {
 	for (int j = 0; j < MATRIX_SIZE; j++) {

@@ -1,7 +1,8 @@
 #+title: Exercise 4 Notes
+#+author: jfrp
 #+source: s01.org
 
-** TODO Exercise 4 [0/4]
+** DONE Exercise 4 [4/4]
 
 Consider the following code:
 #+begin_src C
@@ -15,22 +16,141 @@ Consider the following code:
     int i;
     int status;
     for (i = 0; i < 4; i++) {
-  	if (fork() == 0) {
-  	  sleep(1);
-  	  printf("End of execution!\n");
-  	}
+      if (fork() == 0) {
+	sleep(1);
+      }
     }
+    printf("End of execution!\n");
     return 0;
   }
 #+end_src
 
-*** TODO (a) How many processes are created by the above code?
+*** DONE (a) How many processes are created by the above code?
+The total number of processes created (including the initial parent
+process) is given by the formula:
+#+end_quote
+$$ 2^n, \text{where } n \text{ is the number of consecutive `fork()` calls.} $$
 
+#+begin_quote
+Given that there are 4 `fork()` calls in the code:
+#+end_quote
 
-*** TODO (b) Please modify the code so that exactly 4 child processes are created.
+$$ \text{let } n = 4, $$
+$$ 2^4 = 16. $$
 
+#+begin_quote
+Therefore, 16 processes are created in total.
+#+end_quote
 
-*** TODO (c) Assuming the changes in b), modify the code so that the parent process waits for child processes with an odd process ID.
+*** DONE (b) Please modify the code so that exactly 4 child processes are created.
+#+begin_src C
+  #include <stdio.h>
+  #include <unistd.h>
+  #include <sys/wait.h>
 
+  int
+  main(void)
+  {
+    int i;
+    int status;
+    for (i = 0; i < 4; i++) {
+      if (fork() == 0) {
+	sleep(1);
+	exit(0);
+      }
+    }
+    printf("End of execution!\n");
+    return 0;
+  }
+#+end_src
 
-*** TODO (d) Assuming the changes in b) and c), modify the code so that the child processes return a number that shows their creation order (the first child process returns 1, the second returns 2, and so on). Justify your answer.
+*** DONE (c) Assuming the changes in b), modify the code so that the parent process waits for child processes with an odd process ID.
+#+begin_src C
+  #include <stdio.h>
+  #include <unistd.h>
+  #include <sys/wait.h>
+
+  int
+  main(void)
+  {
+    int i;
+    int status;
+    pid_t pids[4];
+
+    for (i = 0; i < 4; i++) {
+      pids[i] = fork();
+
+      if (pids[i] == 0) {
+	sleep(1);
+	exit(0);
+      }
+    }
+
+    for (i = 0; i < 4; i++) {
+      if (pids[i] % 2 != 0) {
+	printf("Waiting for odd child with PID: %d\n", pids[i]);
+	waitpid(pids[i], &status, 0);
+      }
+    }
+
+    printf("End of execution!\n");
+    return 0;
+  }
+#+end_src
+
+*** DONE (d) Assuming the changes in b) and c), modify the code so that the child processes return a number that shows their creation order (the first child process returns 1, the second returns 2, and so on). Justify your answer.
+#+begin_src C
+  #include <stdio.h>
+  #include <unistd.h>
+  #include <sys/wait.h>
+  #include <stdlib.h>
+
+  int
+  main(void)
+  {
+    int i;
+    int status;
+    pid_t pids[4];
+
+    for (i = 0; i < 4; i++) {
+      pids[i] = fork();
+
+      if (pids[i] == 0) {
+	sleep(1);
+	/*
+	  From man wait(2):
+	  If  wstatus  is not NULL, wait() and waitpid() store status information
+	  in the int to which it points.  This integer can be inspected with  the
+	  following  macros  (which take the integer itself as an argument, not a
+	  pointer to it, as is done in wait() and waitpid()!):
+
+	  WIFEXITED(wstatus)
+	  returns true if the child terminated normally, that is, by call‐
+	  ing exit(3) or _exit(2), or by returning from main().
+
+	  WEXITSTATUS(wstatus)
+	  returns the exit status of the  child.   This  consists  of  the
+	  least  significant  8 bits of the status argument that the child
+	  specified in a call to exit(3) or _exit(2) or  as  the  argument
+	  for a return statement in main().  This macro should be employed
+	  only if WIFEXITED returned true.
+	,*/
+	exit(i + 1); 
+      }
+    }
+
+    for (i = 0; i < 4; i++) {
+      if (pids[i] % 2 != 0) {
+	waitpid(pids[i], &status, 0);
+
+	if (WIFEXITED(status)) {
+	  int ordem = WEXITSTATUS(status);
+	  printf("Filho PID %d terminou. Ordem de criação: %d\n",
+		 pids[i], ordem);
+	}
+      }
+    }
+
+    printf("End of execution!\n");
+  }
+#+end_src

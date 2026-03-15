@@ -6,8 +6,8 @@ main(void)
 {
   fork();
   fork();
-  printf("MESCC\n");
+  printf("MESCC");
   fork();
-  printf("MESCC\n");
+  printf("MESCC");
   return 0;
 }

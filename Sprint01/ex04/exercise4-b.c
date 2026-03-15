@@ -10,6 +10,7 @@ main(void)
   for (i = 0; i < 4; i++) {
     if (fork() == 0) {
       sleep(1);
+      exit(0);
     }
   }
   printf("End of execution!\n");
