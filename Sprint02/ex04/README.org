@@ -1,0 +1,45 @@
+* Printscreens
+
+** Insmod
+
+[[file:img/insmod.png]]
+
+** Write (4 Messages)
+
+#+begin_src bash
+  for i in {1 .. 4}; do
+      echo "Hello{$i}" > /proc/ring_buffer;
+  done
+#+end_src
+
+[[file:img/write-4-messages.png]]
+
+#+begin_quote
+Dequeue occurs every second when ring is not empty.
+#+end_quote
+
+** Read (last_message)
+
+#+begin_src bash
+  cat /proc/ring_buffer
+#+end_src
+
+[[file:img/read-hello4.png]]
+
+#+begin_quote
+We read the last message dequeued.
+#+end_quote
+
+** Write & Read last_message
+
+#+begin_src bash
+  echo "Hello Last" > /proc/ring_buffer
+#+end_src
+
+#+begin_src bash
+  cat /proc/ring_buffer
+#+end_src
+
+[[file:img/rw-last.png]]
+
+[[file:img/rw-last-dmesg.png]]
