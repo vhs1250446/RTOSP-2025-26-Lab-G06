@@ -1,0 +1,5 @@
+* Printscreens
+
+** insmod + ran for ~8seconds + rmmod
+
+[[file:img/exercise6a.png]]
