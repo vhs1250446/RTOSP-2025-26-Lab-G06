@@ -2,29 +2,28 @@
 #include <linux/kernel.h>
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/jiffies.h>
 #include <linux/timer.h>
 
 #define ENTRY_NAME "ring_buffer"
-#define BUFFER_LEN	100
-#define QUEUE_LEN	5
+#define BUFFER_LEN 100
+#define QUEUE_LEN  5
 
-////////////////////////////////////////////////////////////////////////////////
-// Dynamic Kernel Module loading callbacks
-//
 
-int proc_init(void);
 int proc_open(struct inode *inode, struct file *filp);
 ssize_t  proc_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos);
 ssize_t  proc_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos);
 int proc_close(struct inode *inode, struct file *filp);
-void proc_exit(void);
 
-////////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////////////////////
-// Circular Buffer Data Type(s)
+static void timer_callback(struct timer_list* t);
+static int increment(int* item);
+static int is_empty(int r, int w);
+static int is_full(int r, int w);
+static int enqueue (char *buffer);
+static int dequeue (char *buffer);
+
 
 struct queue_item{
 	char buffer[BUFFER_LEN];
@@ -35,22 +34,6 @@ struct ring {
 	int read_item;
 };
 
-////////////////////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////////////////////
-// Local Function Prototypes
-
-static void timer_callback(struct timer_list* t);
-static int increment(int * item);
-static int is_empty(int r, int w);
-static int is_full(int r, int w);
-static int enqueue (char *buffer);
-static int dequeue (char *buffer);
-
-////////////////////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////////////////////
-// Local Global Variables == Kernel-side Storage
 
 struct proc_dir_entry *proc_entry = NULL;
 struct ring ring;
@@ -59,10 +42,8 @@ unsigned long TIMER_INTERVAL;
 spinlock_t lock;
 char LAST_MESSAGE[BUFFER_LEN];
 
-////////////////////////////////////////////////////////////////////////////////
 
-static void
-timer_callback(struct timer_list* t)
+static void timer_callback(struct timer_list* t)
 {
 	int ret = 0;
 	char last_msg[BUFFER_LEN];
@@ -86,8 +67,8 @@ timer_callback(struct timer_list* t)
 	mod_timer(&timer, timer.expires + TIMER_INTERVAL);
 }
 
-static int
-increment(int* item)
+
+static int increment(int* item)
 {
 	int ret;
 	ret = *item;
@@ -95,8 +76,8 @@ increment(int* item)
 	return ret;
 }
 
-static int
-is_empty(int r, int w)
+
+static int is_empty(int r, int w)
 {
 	int ret;
 
@@ -105,8 +86,8 @@ is_empty(int r, int w)
 	return ret;
 }
 
-static int
-is_full(int r, int w)
+
+static int is_full(int r, int w)
 {
 	int ret, write;
 	write = (w + 1) % QUEUE_LEN;
@@ -115,8 +96,7 @@ is_full(int r, int w)
 }
 
 
-static int
-dequeue (char *destination)
+static int dequeue (char *destination)
 {
 	int ret = 0;
 	char* source = NULL;
@@ -134,8 +114,8 @@ dequeue (char *destination)
 	return ret;
 }
 
-static int
-enqueue (char *buffer)
+
+static int enqueue (char *buffer)
 {
 	if(is_full(ring.read_item, ring.write_item)) {
 		increment(&ring.read_item); //remove from buffer
@@ -148,16 +128,14 @@ enqueue (char *buffer)
 	return 1;
 }
 
-int
-proc_open(struct inode *inode, struct file *filp)
+int proc_open(struct inode *inode, struct file *filp)
 {
 	printk(KERN_INFO "LKM: %s:[%d] open\n", ENTRY_NAME, current->pid);
 	return 0;
 }
 
 
-ssize_t
-proc_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+ssize_t proc_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
 	int ret = 0;
 	int len = 0;
@@ -183,7 +161,7 @@ proc_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 		return -EFAULT;
 	}
 
-	ret = raw_copy_to_user(buf, temp, len);
+	ret = copy_to_user(buf, temp, len);
 	if(ret != 0)
 		return -EFAULT;
 
@@ -192,8 +170,8 @@ proc_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 	return len;
 }
 
-ssize_t
-proc_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos)
+
+ssize_t proc_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos)
 {
 	int ret;
 	char temp[BUFFER_LEN];
@@ -204,7 +182,7 @@ proc_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos)
         	return -EINVAL;
 	}
 
-	ret = raw_copy_from_user(temp, buf, count);
+	ret = copy_from_user(temp, buf, count);
     	if (ret != 0) {
         	return -EFAULT;
 	}
@@ -226,12 +204,13 @@ proc_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos)
 	return count;
 }
 
-int
-proc_close(struct inode *inode, struct file *filp)
+
+int proc_close(struct inode *inode, struct file *filp)
 {
 	printk(KERN_INFO "LKM: %s:[%d] close\n", ENTRY_NAME, current->pid);
 	return 0;
 }
+
 
 static const struct proc_ops proc_ops = {
  	.proc_open  	= proc_open,
@@ -240,8 +219,8 @@ static const struct proc_ops proc_ops = {
  	.proc_release  	= proc_close,
 };
 
-int
-proc_init(void)
+
+static int __init when_insmmod(void)
 {
    	proc_entry = proc_create(ENTRY_NAME, 0666, NULL, &proc_ops);
 	if (proc_entry == NULL) {
@@ -265,17 +244,19 @@ proc_init(void)
 }
 
 
-void
-proc_exit(void)
+static void __exit when_rmmod(void)
 {
    	remove_proc_entry(ENTRY_NAME, NULL);
+
    	printk(KERN_INFO "LKM: /proc/%s removed\n", ENTRY_NAME);
+
 	timer_delete_sync(&timer);
 }
+
 
 module_init(proc_init);
 module_exit(proc_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("VHS");
-MODULE_DESCRIPTION("Ring buffer implementation. Dequeue via timer callback");
+MODULE_AUTHOR("vhs-1250446");
+MODULE_DESCRIPTION("Exercise 4 Ring Buffer Dequeue via timer callback");

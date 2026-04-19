@@ -245,5 +245,5 @@ module_init(when_insmod);
 module_exit(when_rmmod);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("vhs");
-MODULE_DESCRIPTION("Sorted queue implementation");
+MODULE_AUTHOR("vhs-1250446");
+MODULE_DESCRIPTION("Exercise 2.b - Synchronized Sorted queue.");

@@ -197,5 +197,5 @@ module_init(when_insmod);
 module_exit(when_rmmod);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("vhs");
-MODULE_DESCRIPTION("exercise 6.b");
+MODULE_AUTHOR("vhs-1250446");
+MODULE_DESCRIPTION("Exercise 6.b - 3 kernel threads Waker Writer Reader");

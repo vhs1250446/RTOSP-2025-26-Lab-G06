@@ -194,5 +194,5 @@ module_init(when_insmod);
 module_exit(when_rmmod);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("vhs");
-MODULE_DESCRIPTION("The kernel thread example");
+MODULE_AUTHOR("vhs-1250046");
+MODULE_DESCRIPTION("Exercise 6.a - 3 kernel threads Waker Increment Decrement");
