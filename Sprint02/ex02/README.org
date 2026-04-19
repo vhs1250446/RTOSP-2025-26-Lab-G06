@@ -1,0 +1,13 @@
+* Printscreens
+
+** 2.a FIFO QUEUE insmod + PUSH + POP + rmmod
+
+[[file:img/exercise2_fifoQ.png]]
+
+
+** 2.b RBTREE insmod + PUSH + POP + rmmod
+
+[[file:img/exercise2_sortedQ.png]]
+[[file:img/exercise2_sortedQ2.png]]
+[[file:img/exercise2_sortedQ3.png]]
+[[file:img/exercise2_sortedQ4.png]]
