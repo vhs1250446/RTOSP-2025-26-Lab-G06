@@ -1,5 +1,10 @@
 * Printscreens
 
-** insmod + ran for ~8seconds + rmmod
+** 6.a insmod + ran for ~8seconds + rmmod
 
 [[file:img/exercise6a.png]]
+
+
+** 6.b insmod + ran for ~8seconds + rmmod
+
+[[file:img/exercise6b.png]]
